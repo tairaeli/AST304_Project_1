@@ -1,18 +1,34 @@
 ########################################################################
 # MSU Hollow Earth Society: 
-# Joe Epely, Elias Taira, Erin, Syerson, Michael Bellaver
+# Joe Epley, Elias Taira, Erin Syerson, Michael Bellaver
 # AST 304, Fall 2020
 # Michigan State University
 ########################################################################
 
 """
 <Description of this module goes here: what it does, how it's used.>
+kinetic_energy uses the velocity array to calculate the kinetic energy at any point
+
+potential_energy uses the position array and the mass to find the potential 
+  energy at any point
+
+total_energy uses the array of positions and velocities as well as the mass to 
+  calculate the total energy at any point, verifying that it is conserved
+
+derivs takes in the current time, array of positions and velocities, and the 
+  mass and computes the derivatives of position and velocity
+
+integrate_orbit takes in the initial positions and velocities, the mass, the end 
+  time, the time step, and the method of integration to integrate the orbit 
+
+set_initial_conditions takes in the semi-major axis, the mass, and the 
+  eccentricity to calculate the initial conditions
 """
 
 import numpy as np
 from numpy.linalg import norm
 # ode.py is your routine containing integrators
-from ode import fEuler, rk2, rk4
+#from ode import fEuler, rk2, rk4
 
 # use this to identify methods
 integration_methods = {
@@ -35,7 +51,6 @@ def kinetic_energy(v):
 def potential_energy(x,m):
     """
     Returns potential energy per unit mass: PE(x, m) = -m/norm(r)
-
     Arguments
         x (array-like)
             position vector
@@ -49,9 +64,12 @@ def potential_energy(x,m):
 def total_energy(z,m):
     """
     Returns energy per unit mass: E(z,m) = KE(v) + PE(x,m)
-
     Arguments
-        <fill this in>
+        
+        z (array-like)
+            x and y postions and velocities
+        m (scalar)
+            total mass in normalized units
     """
     # to break z into position, velocity vectors, we use array slices:
     # here z[n:m] means take elements of z with indices n <= j < m
@@ -59,24 +77,36 @@ def total_energy(z,m):
     v = z[2:4]  # start with index 2 and take two indices: 2 and 3
 
     # replace the following two lines
-    pass
-    return
+    TE = potential_energy(r,m) + kinetic_energy(v)
+
+    return TE
 
 def derivs(t,z,m):
     """
     Computes derivatives of position and velocity for Kepler's problem 
     
     Arguments
-        <fill this in>
+        
+        t (scalar)
+            time at an instant
+        z (array-like)
+            x and y postions and velocities
+        m (scalar)
+            total mass in normalized units
     Returns
         numpy array dzdt with components [ dx/dt, dy/dt, dv_x/dt, dv_y/dt ]
     """
     # Fill in the following steps
     # 1. split z into position vector and velocity vector (see total_energy for example)
+    r = z[0:2]
+    v = z[2:4]
     # 2. compute the norm of position vector, and use it to compute the force
+    r_norm = norm(r)
     # 3. compute drdt (array [dx/dt, dy/dt])
+    drdt = v
     # 4. compute dvdt (array [dvx/dt, dvy/dt])
-
+    # G = 39.4784
+    dvdt = -m*r/r_norm**3
     # join the arrays
     dzdt = np.concatenate((drdt,dvdt))
     return dzdt
@@ -87,21 +117,19 @@ def integrate_orbit(z0,m,tend,h,method='RK4'):
     to t = tend.
     
     Arguments:
-        z0
-            < fill this in >
-
-        m
-            < fill this in >
+        z0 (array-like)
+            array of initial postions and velocities
+        m (scalar)
+            total mass in normalized units
     
-        tend
-            < fill this in >
+        tend (scalar)
+            end time of orbit map
     
-        h
-            < fill this in >
+        h (scalar)
+            time step
     
         method ('Euler', 'RK2', or 'RK4')
             identifies which stepper routine to use (default: 'RK4')
-
     Returns
         ts, Xs, Ys, KEs, PEs, TEs := arrays of time, x postions, y positions, 
         and energies (kin., pot., total) 
@@ -127,6 +155,9 @@ def integrate_orbit(z0,m,tend,h,method='RK4'):
     Xs[0] = z[0]
     Ys[0] = z[1]
     # now extend this with KEs[0], PEs[0], TEs[0]
+    KEs[0] = kinetic_energy(z[2:4])
+    PEs[0] = potential_energy(z[0:2], m)
+    TEs[0] = total_energy(z, m)
 
     # select the stepping method
     advance_one_step = integration_methods[method]
@@ -134,10 +165,16 @@ def integrate_orbit(z0,m,tend,h,method='RK4'):
     for step in range(1,Nsteps):
         z = advance_one_step(derivs,t,z,h,args=m)
         # insert statement here to increment t by the stepsize h
-
+        t+=h
         # store values
         ts[step] = t
         # fill in with assignments for Xs, Ys, KEs, PEs, TEs
+        Xs[step] = z[0]
+        Ys[step] = z[1]
+        KEs[step] = kinetic_energy(z[2:4])
+        PEs[step] = potential_energy(z[0:2], m)
+        TEs[step] = total_energy(z, m)
+        
     return ts, Xs, Ys, KEs, PEs, TEs
     
 def set_initial_conditions(a, m, e):
@@ -160,19 +197,18 @@ def set_initial_conditions(a, m, e):
         
     # fill in the following lines with the correct formulae
     # total energy per unit mass
-    eps0 = 0.0
+    eps0 = -m/(2*a)
     # period of motion
-    Tperiod = 0.0
+    Tperiod = (np.pi/np.sqrt(2))*m*abs(eps0)**(-3/2)
 
     # initial position
     # fill in the following lines with the correct formulae
-    x0 = 0.0
+    x0 = (1+e)*a
     y0 = 0.0
 
     # initial velocity is in y-direction; we compute it from the energy
     # fill in the following lines with the correct formulae
     vx0 = 0.0
-    vy0 = 0.0
+    vy0 = np.sqrt(2*eps0+(2*m/x0))
     
     return np.array([x0,y0,vx0,vy0]), eps0, Tperiod
-
