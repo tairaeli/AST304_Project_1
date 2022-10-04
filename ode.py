@@ -25,11 +25,17 @@ def fEuler(f,t,z,h,args=()):
         f(t,z,...)
             function that contains the RHS of the equation dz/dt = f(t,z,...)
     
-        <fill this in>
+        t
+            the time at which the system is currently at. Only impacts anything
+            if f() has a time dependence
+        
+        h
+            the timestep between each run of the method, smaller timesteps will
+            result in more accurate results, but increase computation time
     
         args (tuple, optional)
             additional arguments to pass to f
-    
+            
     Returns
         znew = z(t+h)
     """
@@ -64,7 +70,13 @@ def rk2(f,t,z,h,args=()):
         f(t,z,...)
             function that contains the RHS of the equation dz/dt = f(t,z,...)
     
-        <fill this in>
+        t
+            the time at which the system is currently at. Only impacts anything
+            if f() has a time dependence
+        
+        h
+            the timestep between each run of the method, smaller timesteps will
+            result in more accurate results, but increase computation time
     
         args (tuple, optional)
             additional arguments to pass to f
@@ -77,18 +89,14 @@ def rk2(f,t,z,h,args=()):
         args = (args,)
     
     # detemines initial acceleration
-    k1z =  f(t, z, *args)
-            
-    # moves acc forwards by 1 timestep
-    k1z = k1z*h
+    k1z = f(t, z, *args)
             
     # finds new acc from k1
-    k2z = f(t+h/2, z+0.5*k1z, *args)
+    k2z = f(t+h/2, z+h/2*k1z, *args)
             
     # changes r/v in next time step based on val from k2
-    # also moves k2 forward a timestep when using
+    # moves k2 forward a timestep when using
     znew = z+k2z*h
-
     return znew
 
 def rk4(f,t,z,h,args=()):
@@ -102,7 +110,13 @@ def rk4(f,t,z,h,args=()):
         f(t,z,...)
             function that contains the RHS of the equation dz/dt = f(t,z,...)
     
-        <fill this in>
+        t
+            the time at which the system is currently at. Only impacts anything
+            if f() has a time dependence
+        
+        h
+            the timestep between each run of the method, smaller timesteps will
+            result in more accurate results, but increase computation time
     
         args (tuple, optional)
             additional arguments to pass to f
@@ -113,21 +127,18 @@ def rk4(f,t,z,h,args=()):
    
     if not isinstance(args,tuple):
         args = (args,)
-    # detemines initial acc, moves it forward by 1 timestep
-    k1z =  f(t,z,*args)
-    k1z = k1z*h 
+    # detemines initial acc
+    k1z =  f(t,z,*args) 
     
-    # # finds new acc from k1, moves it forward by 1 timestep
-    k2z =  f(t+h/2,z+0.5*k1z,*args)
-    k2z = k2z*h 
+    # # finds new acc from k1
+    k2z =  f(t+h/2,z+h/2*k1z,*args)
     
-    # # finds new acc from k2, moves it forward by 1 timestep
-    k3z =  f(t+h/2,z+0.5*k2z,*args)
-    k3z = k3z*h 
+    # # finds new acc from k2
+    k3z =  f(t+h/2,z+h/2*k2z,*args)
     
-    # # finds new acc from k3, moves it forward by 1 timestep in final line
-    k4z = f(t+h/2,z+0.5*k3z,*args)
+    # # finds new acc from k3
+    k4z = f(t+h,z+h*k3z,*args)
     
-    # # changes r/v in next time step based on val from k4
-    znew = z+k4z*h
+    # # changes r/v in next time step based on values from the k's
+    znew = z + (h/6)*(k1z + 2*k2z + 2*k3z + k4z)
     return znew
